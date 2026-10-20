@@ -1,0 +1,4 @@
+Fix week 1:
+- Không cần convert widechar <=> multibyte để tránh mất mát dữ liệu
+- ReadFile có kết quả trả về, nên check kết quả tránh báo xanh
+- Thay vì dùng vector, cấp phát bằng HeapAlloc
