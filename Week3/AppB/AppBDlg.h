@@ -3,7 +3,7 @@
 //
 
 #pragma once
-
+#define WM_PIPE_RECV (WM_USER + 2)
 
 // CAppBDlg dialog
 class CAppBDlg : public CDialogEx
@@ -36,4 +36,7 @@ public:
 	CListCtrl m_listMsg;
 	CString m_strMsg;
 	afx_msg void OnBnClickedBtnSend();
+	afx_msg void OnBnClickedBtnConnect();
+	HANDLE m_hPipe;
+	afx_msg LRESULT OnPipeRecv(WPARAM wParam, LPARAM lParam);
 };

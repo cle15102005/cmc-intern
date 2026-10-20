@@ -55,6 +55,7 @@ CAppBDlg::CAppBDlg(CWnd* pParent /*=nullptr*/)
 	, m_strMsg(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hPipe = INVALID_HANDLE_VALUE;
 }
 
 void CAppBDlg::DoDataExchange(CDataExchange* pDX)
@@ -70,6 +71,8 @@ BEGIN_MESSAGE_MAP(CAppBDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_SEND, &CAppBDlg::OnBnClickedBtnSend)
 	ON_WM_COPYDATA()
+	ON_BN_CLICKED(IDC_BTN_CONNECT, &CAppBDlg::OnBnClickedBtnConnect)
+	ON_MESSAGE(WM_PIPE_RECV, &CAppBDlg::OnPipeRecv)
 END_MESSAGE_MAP()
 
 
@@ -181,23 +184,85 @@ void CAppBDlg::OnBnClickedBtnSend()
 	UpdateData(TRUE);
 	if (m_strMsg.IsEmpty()) return;
 
-	HWND hTargetWnd = ::FindWindow(NULL, L"App A");
-	if (hTargetWnd == NULL) {
-		AfxMessageBox(L"App A chưa được mở!");
-		return;
+	// Send throught pipe if opening
+	if (m_hPipe != INVALID_HANDLE_VALUE) {
+		DWORD bytesWritten;
+		WriteFile(m_hPipe, m_strMsg.GetString(),
+			(m_strMsg.GetLength() + 1) * sizeof(wchar_t),
+			&bytesWritten, NULL);
+
+		int nIndex = m_listMsg.InsertItem(m_listMsg.GetItemCount(), L"Me (Pipe)");
+		m_listMsg.SetItemText(nIndex, 1, m_strMsg);
 	}
+	else {
+		// Send throught wm_copy data otherwise
+		HWND hTargetWnd = ::FindWindow(NULL, L"App B");
+		if (hTargetWnd != NULL) {
+			COPYDATASTRUCT cds;
+			cds.dwData = 1;
+			cds.cbData = (m_strMsg.GetLength() + 1) * sizeof(wchar_t);
+			cds.lpData = (void*)m_strMsg.GetString();
+			::SendMessage(hTargetWnd, WM_COPYDATA, (WPARAM)GetSafeHwnd(), (LPARAM)&cds);
 
-	COPYDATASTRUCT cds;
-	cds.dwData = 1;
-	cds.cbData = (m_strMsg.GetLength() + 1) * sizeof(wchar_t); 
-	cds.lpData = (void*)m_strMsg.GetString(); 
-
-	::SendMessage(hTargetWnd, WM_COPYDATA, (WPARAM)GetSafeHwnd(), (LPARAM)&cds);
-
-	int nIndex = m_listMsg.InsertItem(m_listMsg.GetItemCount(), L"Me");
-	m_listMsg.SetItemText(nIndex, 1, m_strMsg);
-	m_listMsg.EnsureVisible(nIndex, FALSE);
+			int nIndex = m_listMsg.InsertItem(m_listMsg.GetItemCount(), L"Me");
+			m_listMsg.SetItemText(nIndex, 1, m_strMsg);
+		}
+	}
 
 	m_strMsg = L"";
 	UpdateData(FALSE);
+}
+
+// Client thread
+UINT __cdecl PipeClientThread(LPVOID pParam) {
+	CAppBDlg* pDlg = (CAppBDlg*)pParam;
+	HWND hWnd = pDlg->GetSafeHwnd();
+
+	// Connect to App A pioe
+	pDlg->m_hPipe = CreateFile(
+		L"\\\\.\\pipe\\ChatPipeA",
+		GENERIC_READ | GENERIC_WRITE,
+		0, NULL, OPEN_EXISTING, 0, NULL);
+
+	if (pDlg->m_hPipe == INVALID_HANDLE_VALUE) {
+		AfxMessageBox(L"Không thể kết nối. App A chưa bật Server!");
+		return 1;
+	}
+
+	DWORD dwMode = PIPE_READMODE_MESSAGE;
+	SetNamedPipeHandleState(pDlg->m_hPipe, &dwMode, NULL, NULL);
+
+	// Read data loop
+	wchar_t buffer[1024];
+	DWORD bytesRead;
+	while (true) {
+		BOOL success = ReadFile(pDlg->m_hPipe, buffer, sizeof(buffer) - sizeof(wchar_t), &bytesRead, NULL);
+		if (!success || bytesRead == 0) break; // Disconnect
+
+		buffer[bytesRead / sizeof(wchar_t)] = L'\0';
+		CString* pStr = new CString(buffer);
+		::PostMessage(hWnd, WM_PIPE_RECV, 2, (LPARAM)pStr);
+	}
+	return 0;
+}
+
+LRESULT CAppBDlg::OnPipeRecv(WPARAM wParam, LPARAM lParam)
+{
+	if (wParam == 1) {
+		AfxMessageBox(L"Đã có client kết nối tới server!");
+	}
+	else if (wParam == 2) {
+		CString* pMsg = (CString*)lParam;
+		int nIndex = m_listMsg.InsertItem(m_listMsg.GetItemCount(), L"Peer (Pipe)");
+		m_listMsg.SetItemText(nIndex, 1, *pMsg);
+		m_listMsg.EnsureVisible(nIndex, FALSE);
+		delete pMsg; // Delete memory after use
+	}
+	return 0;
+}
+
+void CAppBDlg::OnBnClickedBtnConnect()
+{
+	GetDlgItem(IDC_BTN_CONNECT)->EnableWindow(FALSE);
+	AfxBeginThread(PipeClientThread, this);
 }
