@@ -1,0 +1,9 @@
+Format message:
+Time	Receiver	Sender
+xxx	Hello
+xxx+1			Hi! How are you
+
+Fix week 2:
+- each user in the contacts must have a separate box chat, with sample history message chat (use read write)
+- add avatar for users
+- add read, write user/password mechanism
