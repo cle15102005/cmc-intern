@@ -1,0 +1,44 @@
+
+# 1. Thư mục build của Visual Studio
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+.vs/
+
+# 2. File cấu hình cá nhân 
+*.vcxproj.user
+*.suo
+*.user
+
+# 3. File sinh ra trong quá trình biên dịch
+*.exe
+*.dll
+*.lib
+*.pdb
+*.ilk
+*.exp
+*.obj
+*.pch
+*.idb
+*.tlog
+*.log
+*.recipe
+*.res
+*.aps
+*.sdf
+*.opensdf
+
+# 4. File test/output cá nhân 
+output.txt
+test.txt
+
+# 5. File hệ điều hành
+.DS_Store
+Thumbs.db
+
+# 6. File của các ngôn ngữ/IDE khác
+.idea/
+*.vscode/
