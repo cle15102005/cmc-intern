@@ -388,7 +388,7 @@ void CClientDlg::OnBnClickedBtnSend()
 
 	CString cmdToSend;
 
-	// Check if user is system or chat
+	// Check user
 	if (m_strMsg.Left(5) == L"LOGIN" || m_strMsg.Left(3) == L"REG") {
 		cmdToSend = m_strMsg; // 
 	}

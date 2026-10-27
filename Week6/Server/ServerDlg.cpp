@@ -52,11 +52,9 @@ bool SendMessageToSocket(SOCKET sock, const CString& strMsg) {
 
 	// Get byte size of message
 	uint32_t len = (strMsg.GetLength() + 1) * sizeof(wchar_t);
-
-	// Convert to Network Byte Order (Big-Endian) to send to net
 	uint32_t netLen = htonl(len);
 
-	// Send first 4-bytes length
+	// Send 4-bytes length
 	if (!SendAll(sock, &netLen, sizeof(netLen))) return false;
 
 	// Send message conetent
@@ -71,9 +69,8 @@ bool RecvMessageFromSocket(SOCKET sock, CString& strMsgOut) {
 	uint32_t netLen = 0;
 	// Read 4-bytes length
 	if (!RecvAll(sock, &netLen, sizeof(netLen))) return false;
-
-	// Convert from Network Byte Order to normal
 	uint32_t payloadLen = ntohl(netLen);
+
 	if (payloadLen == 0 || payloadLen > 1024 * 1024) return false;
 	
 	// Allocate memory size
@@ -92,7 +89,7 @@ bool RecvMessageFromSocket(SOCKET sock, CString& strMsgOut) {
 	return true;
 }
 
-// 1 thread per client
+// Handle Thread per Client
 UINT __cdecl ClientHandlerThread(LPVOID pParam) {
 	ClientThreadParam* pData = (ClientThreadParam*)pParam;
 	SOCKET clientSock = pData->sock;     // Get socket of the client
@@ -345,23 +342,23 @@ BOOL CServerDlg::OnInitDialog()
 	// Test database
 	if (InitDatabase()) {
 		// Register an account
-		if (RegisterUser(L"admin", L"123456")) {
-			AfxMessageBox(L"Đăng ký admin thành công!");
-		}
-		else {
-			AfxMessageBox(L"Đăng ký thất bại (có thể admin đã tồn tại)!");
-		}
+		//if (RegisterUser(L"admin", L"123456")) {
+		//	AfxMessageBox(L"Dummy admin success!");
+		//}
+		//else {
+		//	AfxMessageBox(L"Register failed (admin may existed)!");
+		//}
 
 		// Login
-		if (LoginUser(L"admin", L"123456")) {
-			AfxMessageBox(L"Đăng nhập thành công!");
-		}
-		else {
-			AfxMessageBox(L"Đăng nhập thất bại!");
-		}
+		//if (LoginUser(L"admin", L"123456")) {
+		//	AfxMessageBox(L"Logged in!");
+		//}
+		//else {
+		//	AfxMessageBox(L"Logged failed!");
+		//}
 	}
 	else {
-		AfxMessageBox(L"Không thể khởi tạo Database!");
+		AfxMessageBox(L"Cannot initialize database!");
 	}
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
