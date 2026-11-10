@@ -297,7 +297,7 @@ BOOL CClientDlg::OnInitDialog()
 	m_listMsg.InsertColumn(2, L"Message", LVCFMT_LEFT, 200);
 	AdjustMessageColumnWidth();
 
-	// Image list cho avatar/icon nguoi dung tren TreeView (+diem giao dien)
+	// Image list 
 	m_treeImageList.Create(16, 16, ILC_COLOR32, 1, 1);
 	m_treeImageList.Add(m_hIcon);
 	m_treeUsers.SetImageList(&m_treeImageList, TVSIL_NORMAL);
@@ -421,10 +421,9 @@ LRESULT CClientDlg::OnNetMessage(WPARAM wParam, LPARAM lParam)
 		AfxExtractSubString(sender, *pMsg, 1, L'|');
 		AfxExtractSubString(content, *pMsg, 2, L'|');
 
-		// 1. Luon luu vao lich su local database
+		// local database
 		SaveLocalHistory(sender, L"RECV", content);
 
-		// 2. Neu chua chon ai chat, tu dong chon nguoi vua nhan tin toi
 		if (m_strCurrentPeer.IsEmpty()) {
 			m_strCurrentPeer = sender;
 			HTREEITEM hRoot = m_treeUsers.GetRootItem();
@@ -440,7 +439,6 @@ LRESULT CClientDlg::OnNetMessage(WPARAM wParam, LPARAM lParam)
 			}
 		}
 
-		// 3. Chi hien thi len ListView neu dang mo chat voi sender nay
 		if (sender == m_strCurrentPeer) {
 			int nIndex = m_listMsg.InsertItem(m_listMsg.GetItemCount(), strTime);
 			m_listMsg.SetItemText(nIndex, 1, sender); 
@@ -450,7 +448,6 @@ LRESULT CClientDlg::OnNetMessage(WPARAM wParam, LPARAM lParam)
 		}
 	}
 	else if (*pMsg == L"CHAT_OK" || *pMsg == L"LOGIN_OK") {
-		// Bo qua cac phan hoi he thong nay, khong in len ListView de tranh rac man hinh
 	}
 	else if (pMsg->Left(9) == L"CHAT_FAIL") {
 		CString reason;
@@ -458,7 +455,7 @@ LRESULT CClientDlg::OnNetMessage(WPARAM wParam, LPARAM lParam)
 		AfxMessageBox(reason.IsEmpty() ? L"Cannot send message!" : reason);
 	}
 	else {
-		// Cac thong bao he thong khac neu co
+		// others messagess
 	}
 
 	delete pMsg;
@@ -547,7 +544,6 @@ void CClientDlg::OnTvnSelchangedTreeUsers(NMHDR* pNMHDR, LRESULT* pResult)
 			CString content = (const wchar_t*)sqlite3_column_text16(stmt, 1);
 			CString time = (const wchar_t*)sqlite3_column_text16(stmt, 2);
 
-			// Rut gon 'YYYY-MM-DD HH:MM:SS' thanh 'HH:MM:SS' neu co
 			if (time.GetLength() >= 19) {
 				time = time.Mid(11, 8);
 			}

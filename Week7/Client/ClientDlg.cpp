@@ -406,10 +406,10 @@ LRESULT CClientDlg::OnNetMessage(WPARAM wParam, LPARAM lParam)
 		AfxExtractSubString(sender, *pMsg, 1, L'|');
 		AfxExtractSubString(content, *pMsg, 2, L'|');
 
-		// 1. Luon luu vao lich su local database
+		// Save to local database history
 		SaveLocalHistory(sender, L"RECV", content);
 
-		// 2. Neu chua chon ai chat, tu dong chon nguoi vua nhan tin toi
+		// If no chat partner is selected, auto select sender
 		if (m_strCurrentPeer.IsEmpty()) {
 			m_strCurrentPeer = sender;
 			HTREEITEM hRoot = m_treeUsers.GetRootItem();
@@ -425,7 +425,7 @@ LRESULT CClientDlg::OnNetMessage(WPARAM wParam, LPARAM lParam)
 			}
 		}
 
-		// 3. Chi hien thi len ListView neu dang mo chat voi sender nay
+		// Only show on list view if currently chatting with this sender
 		if (sender == m_strCurrentPeer) {
 			int nIndex = m_listMsg.InsertItem(m_listMsg.GetItemCount(), strTime);
 			m_listMsg.SetItemText(nIndex, 1, sender); 
@@ -435,7 +435,6 @@ LRESULT CClientDlg::OnNetMessage(WPARAM wParam, LPARAM lParam)
 		}
 	}
 	else if (*pMsg == L"CHAT_OK" || *pMsg == L"LOGIN_OK") {
-		// Bo qua cac phan hoi he thong nay, khong in len ListView de tranh rac man hinh
 	}
 	else if (pMsg->Left(9) == L"CHAT_FAIL") {
 		CString reason;
@@ -443,7 +442,6 @@ LRESULT CClientDlg::OnNetMessage(WPARAM wParam, LPARAM lParam)
 		AfxMessageBox(reason.IsEmpty() ? L"Cannot send message!" : reason);
 	}
 	else {
-		// Cac thong bao he thong khac neu co
 	}
 
 	delete pMsg;
@@ -532,7 +530,7 @@ void CClientDlg::OnTvnSelchangedTreeUsers(NMHDR* pNMHDR, LRESULT* pResult)
 			CString content = (const wchar_t*)sqlite3_column_text16(stmt, 1);
 			CString time = (const wchar_t*)sqlite3_column_text16(stmt, 2);
 
-			// Rut gon 'YYYY-MM-DD HH:MM:SS' thanh 'HH:MM:SS' neu co
+			// Format time 'YYYY-MM-DD HH:MM:SS' to 'HH:MM:SS' if applicable
 			if (time.GetLength() >= 19) {
 				time = time.Mid(11, 8);
 			}
