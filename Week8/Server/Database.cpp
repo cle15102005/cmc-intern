@@ -92,3 +92,19 @@ bool SaveMessage(const CString& sender, const CString& receiver, const CString& 
     return (rc == SQLITE_DONE);
 }
 
+
+std::vector<CString> GetAllUsers() {
+    std::vector<CString> userList;
+    if (g_db == nullptr) return userList;
+
+    const char* sql = "SELECT username FROM users ORDER BY username ASC;";
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(g_db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            CString u = (const wchar_t*)sqlite3_column_text16(stmt, 0);
+            userList.push_back(u);
+        }
+        sqlite3_finalize(stmt);
+    }
+    return userList;
+}

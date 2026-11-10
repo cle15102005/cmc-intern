@@ -89,22 +89,34 @@ bool RecvMessageFromSocket(SOCKET sock, CString& strMsgOut) {
 	return true;
 }
 
-// Send online user list for all client
+// Send online and offline user list for all client
 void BroadcastUserList() {
-	CString userList = L"USER_LIST";
+	std::vector<CString> allUsers = GetAllUsers();
+	CString onlinePart = L"";
+	CString offlinePart = L"";
+
 	SOCKET socksToSend[100];
 	int count = 0;
 
 	g_onlineMutex.lock();
-	for (auto it = g_onlineUsers.begin(); it != g_onlineUsers.end(); ++it) {
-		userList += L"|" + it->first; 
+	for (const auto& u : allUsers) {
+		if (g_onlineUsers.find(u) != g_onlineUsers.end()) {
+			onlinePart += L"|" + u;
+		}
+		else {
+			offlinePart += L"|" + u;
+		}
+	}
 
+	for (auto it = g_onlineUsers.begin(); it != g_onlineUsers.end(); ++it) {
 		if (count < 100) {
 			socksToSend[count] = it->second; 
 			count++;
 		}
 	}
 	g_onlineMutex.unlock(); 
+
+	CString userList = L"USER_LIST|ONLINE" + onlinePart + L"|OFFLINE" + offlinePart;
 
 	for (int i = 0; i < count; ++i) {
 		SendMessageToSocket(socksToSend[i], userList);
@@ -137,6 +149,7 @@ UINT __cdecl ClientHandlerThread(LPVOID pParam) {
 			senderForLog = user;
 			if (RegisterUser(user, pass)) {
 				response = L"REG_OK";
+				BroadcastUserList();
 			}
 			else {
 				response = L"REG_FAIL|Username exists!";

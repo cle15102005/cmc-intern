@@ -377,30 +377,40 @@ LRESULT CClientDlg::OnNetMessage(WPARAM wParam, LPARAM lParam)
 	CString cmd = pMsg->SpanExcluding(L"|");
 	if (cmd == L"USER_LIST") {
 		m_treeUsers.DeleteAllItems();
-		HTREEITEM hRoot = m_treeUsers.InsertItem(TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE, L"Online Users", 0, 0, 0, 0, 0, TVI_ROOT, TVI_LAST);
+		HTREEITEM hRootOnline = m_treeUsers.InsertItem(TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE, L"Online Users", 0, 0, 0, 0, 0, TVI_ROOT, TVI_LAST);
+		HTREEITEM hRootOffline = m_treeUsers.InsertItem(TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE, L"Offline Users", 0, 0, 0, 0, 0, TVI_ROOT, TVI_LAST);
 		HTREEITEM hItemToReselect = NULL;
+
+		bool bOnlineSection = true;
 		int startPos = 10; // ignore USER_LIST|
 		while (startPos < pMsg->GetLength()) {
 			int endPos = pMsg->Find(L'|', startPos);
-			CString user;
+			CString token;
 			if (endPos == -1) {
-				user = pMsg->Mid(startPos);
+				token = pMsg->Mid(startPos);
 				startPos = pMsg->GetLength();
 			}
 			else {
-				user = pMsg->Mid(startPos, endPos - startPos);
+				token = pMsg->Mid(startPos, endPos - startPos);
 				startPos = endPos + 1;
 			}
 
-			// Add user with avatar icon
-			if (!user.IsEmpty() && user != g_loggedInUser) { 
-				HTREEITEM hItem = m_treeUsers.InsertItem(TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE, user, 0, 0, 0, 0, 0, hRoot, TVI_LAST);
-				if (!m_strCurrentPeer.IsEmpty() && user == m_strCurrentPeer) {
+			if (token == L"ONLINE") {
+				bOnlineSection = true;
+			}
+			else if (token == L"OFFLINE") {
+				bOnlineSection = false;
+			}
+			else if (!token.IsEmpty() && token != g_loggedInUser) { 
+				HTREEITEM hParent = bOnlineSection ? hRootOnline : hRootOffline;
+				HTREEITEM hItem = m_treeUsers.InsertItem(TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE, token, 0, 0, 0, 0, 0, hParent, TVI_LAST);
+				if (!m_strCurrentPeer.IsEmpty() && token == m_strCurrentPeer) {
 					hItemToReselect = hItem;
 				}
 			}
 		}
-		m_treeUsers.Expand(hRoot, TVE_EXPAND);
+		m_treeUsers.Expand(hRootOnline, TVE_EXPAND);
+		m_treeUsers.Expand(hRootOffline, TVE_EXPAND);
 		if (hItemToReselect != NULL) {
 			m_treeUsers.SelectItem(hItemToReselect);
 		}
@@ -467,7 +477,7 @@ void CClientDlg::OnBnClickedBtnSend()
 	}
 
 	CString receiver = m_treeUsers.GetItemText(hSelected);
-	if (receiver == L"Online Users" || receiver.IsEmpty()) {
+	if (receiver == L"Online Users" || receiver == L"Offline Users" || receiver.IsEmpty()) {
 		AfxMessageBox(L"Choose specific person to chat!");
 		return;
 	}
@@ -515,7 +525,7 @@ void CClientDlg::OnTvnSelchangedTreeUsers(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	CString peer = m_treeUsers.GetItemText(hSelected);
-	if (peer == L"Online Users" || peer.IsEmpty()) {
+	if (peer == L"Online Users" || peer == L"Offline Users" || peer.IsEmpty()) {
 		*pResult = 0;
 		return;
 	}
